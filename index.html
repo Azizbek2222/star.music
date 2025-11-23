@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Mini App Musiqa</title>
+
+<!-- Telegram WebApp -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<!-- AdsGram -->
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
+<style>
+body {
+    background: #0d0d0d;
+    color: white;
+    font-family: Arial;
+    padding: 20px;
+}
+.card {
+    background: #1c1c1c;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+.btn {
+    background: #0af;
+    padding: 8px 12px;
+    display: inline-block;
+    margin-top: 10px;
+    border-radius: 8px;
+    color: white;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🎵 Mini App Musiqa</h2>
+
+<input type="text" id="search" placeholder="Musiqa qidirish..." style="width:100%;padding:12px;border-radius:10px;border:none;margin-bottom:20px;">
+
+<div id="musicList"></div>
+
+<script>
+// Telegram user ID olish (AdsGram uchun shart)
+const tg = window.Telegram.WebApp;
+const USER_ID = tg.initDataUnsafe?.user?.id || "guest";
+
+// AdsGram interstitial
+function showAd() {
+    const AdController = window.Adsgram.init({
+        blockId: "int-18073",  // BU YERGA O'ZINGNI BLOCK ID QO'YASAN
+        userId: USER_ID
+    });
+
+    AdController.show()
+    .then(res => console.log("Ad done:", res))
+    .catch(err => console.log("Ad error:", err));
+}
+
+// Musiqa ro‘yxati
+const music = [
+    {name: "Sonne", url: "link1"},
+    {name: "Gul yuzim", url: "link2"},
+    {name: "Ummon - Xiyonat", url: "link3"},
+];
+
+// Render
+function render(list) {
+    const box = document.getElementById("musicList");
+    box.innerHTML = "";
+
+    list.forEach(m => {
+        box.innerHTML += `
+            <div class="card">
+                ${m.name}
+                <a class="btn" href="${m.url}" target="_blank">Yuklab olish</a>
+            </div>
+        `;
+    });
+}
+
+render(music);
+
+// Qidiruv + reklama
+let count = 0;
+document.getElementById("search").addEventListener("input", e => {
+    const val = e.target.value.toLowerCase();
+    const filtered = music.filter(m => m.name.toLowerCase().includes(val));
+    render(filtered);
+
+    count++;
+    if (count >= 3) {
+        showAd();
+        count = 0;
+    }
+});
+</script>
+
+</body>
+</html>
