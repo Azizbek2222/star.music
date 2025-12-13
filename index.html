@@ -30,6 +30,9 @@ input {
     padding: 15px;
     border-radius: 10px;
     margin-bottom: 10px;
+    /* YANGILANGAN QISMI: Musiqa nomi uzun bo'lsa pastga tushishi uchun */
+    overflow-wrap: break-word; 
+    word-break: break-word;
 }
 .btn-download {
     margin-top: 10px;
@@ -125,7 +128,7 @@ function renderList(filtered) {
     });
 }
 
-// === MUSIQALARNI FIREBASE RTDB'DAN YUKLASH ===
+// === MUSIQALARNI FIREBASE RTDB'DAN YUKLASH (o'zgarmadi) ===
 function loadMusics() {
     const musicRef = db.ref('musics');
     const musicListElement = document.getElementById("musicList");
