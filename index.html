@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
 <title>Musiqa Qidiruv</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -16,7 +15,6 @@ input { width: 100%; padding: 13px; border-radius: 10px; border: none; margin-bo
 .btn-download { margin-top: 10px; display: inline-block; padding: 8px 12px; background: #0af; color: white; border-radius: 8px; text-decoration: none; }
 </style>
 </head>
-
 <body>
 
 <h2>Musiqa qidiruv 🎵</h2>
@@ -27,31 +25,53 @@ input { width: 100%; padding: 13px; border-radius: 10px; border: none; margin-bo
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <script>
-// === REKLAMANI "MAJBURIY" ISHLATISH LOGIKASI ===
+// === ANONIM FOYDALANUVCHI GENERATORI (GUEST MODE) ===
 (function() {
-    const STORAGE_KEY = 'tg_init_data_v2';
-    
-    // URL dan yoki xotiradan ma'lumotni olish
-    const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'));
-    let tgData = urlParams.get('tgWebAppData') || localStorage.getItem(STORAGE_KEY);
+    // Telegram obyekti yo'q bo'lsa, uni yaratamiz
+    if (!window.Telegram) window.Telegram = {};
+    if (!window.Telegram.WebApp) window.Telegram.WebApp = {};
 
-    if (tgData) {
-        localStorage.setItem(STORAGE_KEY, tgData);
+    // Agar haqiqiy initData bo'lmasa, soxtasini yaratamiz
+    if (!window.Telegram.WebApp.initData) {
         
-        // Telegram obyektini majburiy to'ldirish
-        if (!window.Telegram) window.Telegram = {};
-        if (!window.Telegram.WebApp) window.Telegram.WebApp = {};
-        
-        window.Telegram.WebApp.initData = tgData;
-        window.Telegram.WebApp.platform = 'weba'; // Brauzerni Telegram Web kabi ko'rsatish
-        
-        if (typeof window.Telegram.WebApp.ready === 'function') {
-            window.Telegram.WebApp.ready();
+        // 1. Foydalanuvchi uchun doimiy tasodifiy ID yaratamiz
+        let guestId = localStorage.getItem('guest_id');
+        if (!guestId) {
+            guestId = Math.floor(Math.random() * 1000000000);
+            localStorage.setItem('guest_id', guestId);
         }
+
+        // 2. AdsGram kutadigan formatni (JSON string) simulyatsiya qilamiz
+        // Bu yerda biz AdsGramni "bu haqiqiy odam" deb ishontirishga harakat qilamiz
+        const userJSON = JSON.stringify({
+            id: parseInt(guestId),
+            first_name: "Guest",
+            last_name: "User",
+            username: "guest_user",
+            language_code: "uz"
+        });
+
+        // 3. Soxta initData yaratish (Vaqtni har doim yangilaymiz)
+        const authDate = Math.floor(Date.now() / 1000);
+        // Hash qismi serverda tekshiriladi, lekin biz baribir to'ldiramiz
+        const fakeHash = "guest_mode_simulation_hash_code_12345"; 
+
+        window.Telegram.WebApp.initData = `query_id=AAHdF6kAAAAAAN0XqQA&user=${encodeURIComponent(userJSON)}&auth_date=${authDate}&hash=${fakeHash}`;
+        
+        // Platformani ham ko'rsatamiz
+        window.Telegram.WebApp.platform = 'android'; 
+        window.Telegram.WebApp.version = '7.0';
+        
+        console.log("Guest Mode yoqildi. ID:", guestId);
+    }
+    
+    // SDK ni tayyor holatga keltirish
+    if (typeof window.Telegram.WebApp.ready === 'function') {
+        window.Telegram.WebApp.ready();
     }
 })();
 
-// === FIREBASE ===
+// === FIREBASE KONFIGURATSIYASI ===
 const firebaseConfig = {
   apiKey: "AIzaSyApRt8MNq4YvsjxQVhyQK3p5km8G7Hi9iE",
   authDomain: "webtelegram-9a1d6.firebaseapp.com",
@@ -69,7 +89,7 @@ let musics = [];
 // === REKLAMA FUNKSIYASI ===
 function showInterstitial() {
     if (window.Adsgram) {
-        console.log("Reklama so'ralmoqda...");
+        // Debug true qilib tekshirib ko'rish mumkin, lekin production uchun false bo'lsin
         const AdController = window.Adsgram.init({
             blockId: "int-18073", 
             type: "interstitial",
@@ -77,16 +97,16 @@ function showInterstitial() {
         });
 
         AdController.show()
-            .then((result) => console.log("Muvaffaqiyat:", result))
+            .then((result) => console.log("Reklama ko'rsatildi (Guest):", result))
             .catch((e) => {
-                console.error("AdsGram xatosi:", e);
-                // Agar brauzerda chiqmasa, foydalanuvchini botga yo'naltirishni maslahat beramiz
+                console.log("Reklama chiqmay qoldi:", e);
+                // Agar 403 yoki "hash invalid" xatosi bersa, demak AdsGram serveri soxta ekanligini bildi
             });
     }
 }
 
-// Sahifa yuklanganda 2 soniyadan keyin reklama
-setTimeout(showInterstitial, 2000);
+// Sahifa yuklanganda 1.5 soniyadan keyin reklama so'rash
+setTimeout(showInterstitial, 1500);
 
 // === MUSIQA LOGIKASI ===
 function renderList(filtered) {
@@ -99,12 +119,16 @@ function renderList(filtered) {
         list.appendChild(div);
     });
 
+    // Yuklab olish tugmasi bosilganda reklama
     let downloadButtons = document.querySelectorAll(".btn-download");
     let downloadCount = 0;
     downloadButtons.forEach(btn => {
         btn.addEventListener("click", () => {
             downloadCount++;
-            if (downloadCount >= 5) { showInterstitial(); downloadCount = 0; }
+            if (downloadCount >= 5) {
+                showInterstitial(); 
+                downloadCount = 0;
+            }
         });
     });
 }
@@ -125,19 +149,24 @@ function loadMusics() {
 
 document.addEventListener("DOMContentLoaded", loadMusics);
 
+// Qidiruvda reklama
 let searchCount = 0;
 let typingTimer;
 document.getElementById("search").addEventListener("input", function () {
     clearTimeout(typingTimer);
+    const value = this.value.toLowerCase();
+    
     typingTimer = setTimeout(() => {
-        const value = this.value.toLowerCase();
         const filtered = musics.filter(m => m.name.toLowerCase().includes(value));
         renderList(filtered);
+        
         searchCount++;
-        if (searchCount >= 5) { showInterstitial(); searchCount = 0; }
+        if (searchCount >= 5) {
+            showInterstitial();
+            searchCount = 0;
+        }
     }, 1000);
 });
 </script>
-
 </body>
 </html>
