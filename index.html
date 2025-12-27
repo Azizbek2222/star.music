@@ -1,19 +1,31 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Musiqa Qidiruv</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Musiqa Qidiruv</title>
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    
+    <script type="text/javascript" src="https://cdn.tgads.space/assets/js/adexium-widget.min.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const adexiumWidget = new AdexiumWidget({
+                wid: 'fbac6f05-0e1d-4a7d-a9b2-5e9f3c09b021', 
+                adFormat: 'push-like'
+            });
+            adexiumWidget.autoMode();
+        });
+    </script>
 
-<style>
-body { font-family: Arial; background: #111; color: white; padding: 20px; }
-input { width: 100%; padding: 13px; border-radius: 10px; border: none; margin-bottom: 20px; font-size: 17px; }
-.music-card { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; overflow-wrap: break-word; word-break: break-word; }
-.btn-download { margin-top: 10px; display: inline-block; padding: 8px 12px; background: #0af; color: white; border-radius: 8px; text-decoration: none; }
-</style>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
+    <style>
+        body { font-family: Arial; background: #111; color: white; padding: 20px; }
+        input { width: 100%; padding: 13px; border-radius: 10px; border: none; margin-bottom: 20px; font-size: 17px; color: #000; }
+        .music-card { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; overflow-wrap: break-word; word-break: break-word; }
+        .btn-download { margin-top: 10px; display: inline-block; padding: 8px 12px; background: #0af; color: white; border-radius: 8px; text-decoration: none; }
+    </style>
 </head>
 <body>
 
@@ -25,24 +37,18 @@ input { width: 100%; padding: 13px; border-radius: 10px; border: none; margin-bo
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <script>
-// === ANONIM FOYDALANUVCHI GENERATORI (GUEST MODE) ===
+// === ANONIM FOYDALANUVCHI GENERATORI ===
 (function() {
-    // Telegram obyekti yo'q bo'lsa, uni yaratamiz
     if (!window.Telegram) window.Telegram = {};
     if (!window.Telegram.WebApp) window.Telegram.WebApp = {};
 
-    // Agar haqiqiy initData bo'lmasa, soxtasini yaratamiz
     if (!window.Telegram.WebApp.initData) {
-        
-        // 1. Foydalanuvchi uchun doimiy tasodifiy ID yaratamiz
         let guestId = localStorage.getItem('guest_id');
         if (!guestId) {
             guestId = Math.floor(Math.random() * 1000000000);
             localStorage.setItem('guest_id', guestId);
         }
 
-        // 2. AdsGram kutadigan formatni (JSON string) simulyatsiya qilamiz
-        // Bu yerda biz AdsGramni "bu haqiqiy odam" deb ishontirishga harakat qilamiz
         const userJSON = JSON.stringify({
             id: parseInt(guestId),
             first_name: "Guest",
@@ -51,21 +57,14 @@ input { width: 100%; padding: 13px; border-radius: 10px; border: none; margin-bo
             language_code: "uz"
         });
 
-        // 3. Soxta initData yaratish (Vaqtni har doim yangilaymiz)
         const authDate = Math.floor(Date.now() / 1000);
-        // Hash qismi serverda tekshiriladi, lekin biz baribir to'ldiramiz
         const fakeHash = "guest_mode_simulation_hash_code_12345"; 
 
         window.Telegram.WebApp.initData = `query_id=AAHdF6kAAAAAAN0XqQA&user=${encodeURIComponent(userJSON)}&auth_date=${authDate}&hash=${fakeHash}`;
-        
-        // Platformani ham ko'rsatamiz
         window.Telegram.WebApp.platform = 'android'; 
         window.Telegram.WebApp.version = '7.0';
-        
-        console.log("Guest Mode yoqildi. ID:", guestId);
     }
     
-    // SDK ni tayyor holatga keltirish
     if (typeof window.Telegram.WebApp.ready === 'function') {
         window.Telegram.WebApp.ready();
     }
@@ -86,10 +85,9 @@ const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.database(); 
 let musics = [];
 
-// === REKLAMA FUNKSIYASI ===
+// === REKLAMA FUNKSIYASI (AdsGram uchun - interstitial) ===
 function showInterstitial() {
     if (window.Adsgram) {
-        // Debug true qilib tekshirib ko'rish mumkin, lekin production uchun false bo'lsin
         const AdController = window.Adsgram.init({
             blockId: "int-18073", 
             type: "interstitial",
@@ -97,16 +95,10 @@ function showInterstitial() {
         });
 
         AdController.show()
-            .then((result) => console.log("Reklama ko'rsatildi (Guest):", result))
-            .catch((e) => {
-                console.log("Reklama chiqmay qoldi:", e);
-                // Agar 403 yoki "hash invalid" xatosi bersa, demak AdsGram serveri soxta ekanligini bildi
-            });
+            .then((result) => console.log("AdsGram ko'rsatildi:", result))
+            .catch((e) => console.log("AdsGram xatosi:", e));
     }
 }
-
-// Sahifa yuklanganda 1.5 soniyadan keyin reklama so'rash
-setTimeout(showInterstitial, 1500);
 
 // === MUSIQA LOGIKASI ===
 function renderList(filtered) {
@@ -119,7 +111,6 @@ function renderList(filtered) {
         list.appendChild(div);
     });
 
-    // Yuklab olish tugmasi bosilganda reklama
     let downloadButtons = document.querySelectorAll(".btn-download");
     let downloadCount = 0;
     downloadButtons.forEach(btn => {
@@ -149,7 +140,7 @@ function loadMusics() {
 
 document.addEventListener("DOMContentLoaded", loadMusics);
 
-// Qidiruvda reklama
+// Qidiruvda AdsGram ko'rsatish logikasi
 let searchCount = 0;
 let typingTimer;
 document.getElementById("search").addEventListener("input", function () {
